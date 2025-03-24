@@ -1,4 +1,3 @@
-g++ platform.cpp pixel_capture.cpp image_processor.cpp e131_sender.cpp -o sdl_ui \
-    -I/mnt/c/Users/gram/Desktop/Capstone2/vcpkg/installed/x64-linux/include \
-    -L/mnt/c/Users/gram/Desktop/Capstone2/vcpkg/installed/x64-linux/lib \
+g++ platform.cpp pixel_capture.cpp include/image_processor/image_processor.cpp include/packet_sender/e131_sender.cpp -o sdl_ui \
+    -I./include \
     -lSDL2 -lSDL2main -lSDL2_ttf -lSDL2_image -ljsoncpp -le131

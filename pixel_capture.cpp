@@ -1,6 +1,6 @@
 #include "pixel_capture.h"
-#include "image_processor.h"
-#include "e131_sender.h"
+#include "image_processor/image_processor.h"
+#include "packet_sender/e131_sender.h"
 #include <SDL2/SDL.h>
 #include <iostream>
 #include <unistd.h> // usleep()
