@@ -20,5 +20,6 @@
         "image/image6.png",
         "image/image7.jpg",
         "image/image8.png"
-    ]
+    ],
+    "BACKGROUND_IMAGE": "assets/image/photo.jpg"
 }

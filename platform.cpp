@@ -6,13 +6,20 @@
 #include "config_loader.h"
 
 using namespace std;
+
 int main(int argc, char *argv[])
 {
-    // 설정 파일 로드
     Config config;
     if (!loadConfig(config))
     {
         cerr << "설정 파일을 불러오지 못했습니다. 기본값을 사용합니다." << endl;
+        return 1;
+    }
+
+    if (config.RECT_COUNT != config.IMAGE_FILES.size())
+    {
+        cerr << "⚠️ RECT_COUNT와 IMAGE_FILES 수가 일치하지 않습니다!" << endl;
+        return 1;
     }
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0 || TTF_Init() != 0)
@@ -28,11 +35,10 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    SDL_Window *window = SDL_CreateWindow(
-        "SDL2 UI",
-        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-        config.SCREEN_WIDTH, config.SCREEN_HEIGHT,
-        SDL_WINDOW_SHOWN);
+    SDL_Window *window = SDL_CreateWindow("SDL2 UI",
+                                          SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                                          config.SCREEN_WIDTH, config.SCREEN_HEIGHT,
+                                          SDL_WINDOW_SHOWN);
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
     if (!window || !renderer)
@@ -54,7 +60,20 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // **이미지 로드**
+    // 배경 이미지 로드
+    SDL_Texture *backgroundTexture = nullptr;
+    SDL_Surface *bgSurface = IMG_Load(config.BACKGROUND_IMAGE.c_str());
+    if (!bgSurface)
+    {
+        cerr << "배경 이미지 로드 실패: " << config.BACKGROUND_IMAGE << " - " << IMG_GetError() << endl;
+    }
+    else
+    {
+        backgroundTexture = SDL_CreateTextureFromSurface(renderer, bgSurface);
+        SDL_FreeSurface(bgSurface);
+    }
+
+    // 이미지 로드
     vector<SDL_Texture *> imageTextures(config.RECT_COUNT, nullptr);
     for (int i = 0; i < config.RECT_COUNT; i++)
     {
@@ -62,6 +81,7 @@ int main(int argc, char *argv[])
         if (!imgSurface)
         {
             cerr << "이미지 로드 실패: " << config.IMAGE_FILES[i] << " - " << IMG_GetError() << endl;
+            imageTextures[i] = nullptr;
         }
         else
         {
@@ -83,52 +103,54 @@ int main(int argc, char *argv[])
         while (SDL_PollEvent(&event))
         {
             if (event.type == SDL_QUIT)
-            {
                 running = false;
-            }
             else if (event.type == SDL_KEYDOWN)
             {
                 if (event.key.keysym.sym == SDLK_LEFT)
-                {
                     selected = (selected - 1 + config.RECT_COUNT) % config.RECT_COUNT;
-                }
                 else if (event.key.keysym.sym == SDLK_RIGHT)
-                {
                     selected = (selected + 1) % config.RECT_COUNT;
-                }
             }
         }
 
         currentOffset += (selected - currentOffset) * config.ANIMATION_SPEED;
-
         for (int i = 0; i < config.RECT_COUNT; i++)
         {
             if (i == selected)
-            {
                 currentScale[i] += (config.SELECTED_SCALE - currentScale[i]) * config.SCALE_SPEED;
-            }
             else
-            {
                 currentScale[i] += (1.0 - currentScale[i]) * config.SCALE_SPEED;
-            }
         }
 
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderClear(renderer);
 
-        // **SPHERE 글씨 추가**
+        // 배경 렌더링
+        if (backgroundTexture)
+        {
+            SDL_Rect bgRect = {0, 0, config.SCREEN_WIDTH, config.SCREEN_HEIGHT};
+            SDL_RenderCopy(renderer, backgroundTexture, NULL, &bgRect);
+        }
+
+        // SPHERE 텍스트
         SDL_Color textColor = {0, 0, 0, 255};
         SDL_Surface *textSurface = TTF_RenderText_Solid(font, "SPHERE", textColor);
-        SDL_Texture *textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+        if (textSurface)
+        {
+            SDL_Texture *textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+            int textWidth = textSurface->w;
+            int textHeight = textSurface->h;
+            SDL_Rect textRect = {(config.SCREEN_WIDTH - textWidth) / 2, 20, textWidth, textHeight};
+            SDL_RenderCopy(renderer, textTexture, NULL, &textRect);
+            SDL_FreeSurface(textSurface);
+            SDL_DestroyTexture(textTexture);
+        }
+        else
+        {
+            cerr << "텍스트 렌더링 실패: " << TTF_GetError() << endl;
+        }
 
-        int textWidth = textSurface->w;
-        int textHeight = textSurface->h;
-        SDL_Rect textRect = {(config.SCREEN_WIDTH - textWidth) / 2, 20, textWidth, textHeight};
-        SDL_RenderCopy(renderer, textTexture, NULL, &textRect);
-        SDL_FreeSurface(textSurface);
-        SDL_DestroyTexture(textTexture);
-
-        // **박스 및 이미지 렌더링**
+        // 이미지 박스 렌더링
         int centerX = config.SCREEN_WIDTH / 2 - (config.RECT_WIDTH * config.SELECTED_SCALE) / 2;
         int startY = config.SCREEN_HEIGHT - config.RECT_HEIGHT - config.BOTTOM_MARGIN;
         int startX = centerX - currentOffset * (config.RECT_WIDTH + config.RECT_GAP);
@@ -139,14 +161,11 @@ int main(int argc, char *argv[])
             int rectHeight = config.RECT_HEIGHT * currentScale[i];
             int offsetY = (rectHeight - config.RECT_HEIGHT) / 2;
 
-            if (i == selected)
-            {
-                SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-            }
-            else
-            {
-                SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
-            }
+            SDL_SetRenderDrawColor(renderer,
+                                   i == selected ? 255 : 0,
+                                   0,
+                                   i == selected ? 0 : 255,
+                                   255);
 
             SDL_Rect rect = {startX, startY - offsetY, rectWidth, rectHeight};
             SDL_RenderFillRect(renderer, &rect);
@@ -166,14 +185,12 @@ int main(int argc, char *argv[])
         SDL_Delay(16);
     }
 
-    // **메모리 해제**
     for (SDL_Texture *texture : imageTextures)
-    {
         if (texture)
-        {
             SDL_DestroyTexture(texture);
-        }
-    }
+
+    if (backgroundTexture)
+        SDL_DestroyTexture(backgroundTexture);
 
     freePixelMemory();
     TTF_CloseFont(font);

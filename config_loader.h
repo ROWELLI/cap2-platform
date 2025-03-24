@@ -3,12 +3,11 @@
 
 #include <iostream>
 #include <fstream>
-#include <jsoncpp/json/json.h> // JSONCpp 라이브러리
+#include <jsoncpp/json/json.h>
 #include <vector>
 
 using namespace std;
 
-// 설정값을 저장하는 구조체
 struct Config
 {
     int SCREEN_WIDTH;
@@ -21,9 +20,10 @@ struct Config
     float SELECTED_SCALE;
     float ANIMATION_SPEED;
     float SCALE_SPEED;
-    string FONT_PATH; // 폰트 파일 경로
-    int FONT_SIZE;    // 폰트 크기
+    string FONT_PATH;
+    int FONT_SIZE;
     vector<string> IMAGE_FILES;
+    string BACKGROUND_IMAGE;
 };
 
 bool loadConfig(Config &config, const string &filename = "config.json")
@@ -64,6 +64,8 @@ bool loadConfig(Config &config, const string &filename = "config.json")
         {
             config.IMAGE_FILES.push_back(file.asString());
         }
+
+        config.BACKGROUND_IMAGE = root["BACKGROUND_IMAGE"].asString();
     }
     catch (exception &e)
     {
