@@ -1,8 +1,8 @@
 #include <cstdint>
 #include <e131.h>
 #include <string>
-#include "err.h"
-#define BUFSIZE 512
+#include <err.h>
+#define E131_BUFFER_SIZE 512
 class E131Sender{
     public:
         E131Sender(const char * ip, uint16_t port=E131_DEFAULT_PORT){
