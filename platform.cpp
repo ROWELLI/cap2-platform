@@ -132,24 +132,6 @@ int main(int argc, char *argv[])
             SDL_RenderCopy(renderer, backgroundTexture, NULL, &bgRect);
         }
 
-        // SPHERE 텍스트
-        SDL_Color textColor = {0, 0, 0, 255};
-        SDL_Surface *textSurface = TTF_RenderText_Solid(font, "SPHERE", textColor);
-        if (textSurface)
-        {
-            SDL_Texture *textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-            int textWidth = textSurface->w;
-            int textHeight = textSurface->h;
-            SDL_Rect textRect = {(config.SCREEN_WIDTH - textWidth) / 2, 20, textWidth, textHeight};
-            SDL_RenderCopy(renderer, textTexture, NULL, &textRect);
-            SDL_FreeSurface(textSurface);
-            SDL_DestroyTexture(textTexture);
-        }
-        else
-        {
-            cerr << "텍스트 렌더링 실패: " << TTF_GetError() << endl;
-        }
-
         // 이미지 박스 렌더링
         int centerX = config.SCREEN_WIDTH / 2 - (config.RECT_WIDTH * config.SELECTED_SCALE) / 2;
         int startY = config.SCREEN_HEIGHT - config.RECT_HEIGHT - config.BOTTOM_MARGIN;
