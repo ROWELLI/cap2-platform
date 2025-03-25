@@ -1,13 +1,14 @@
-// config_loader.h + cpp 통합 파일
+// config_loader.h + cpp 통합 파일 (vector 제거 버전)
 #ifndef CONFIG_LOADER_H
 #define CONFIG_LOADER_H
 
 #include <string>
-#include <vector>
 #include <map>
 #include <fstream>
 #include <jsoncpp/json/json.h>
 #include <iostream>
+
+#define MAX_ITEMS 50
 
 struct Config
 {
@@ -23,12 +24,14 @@ struct Config
     float SCALE_SPEED;
     std::string FONT_PATH;
     int FONT_SIZE;
-    std::vector<std::string> IMAGE_FILES;
+    std::string IMAGE_FILES[MAX_ITEMS];
+    int IMAGE_FILE_COUNT;
     std::string BACKGROUND_IMAGE;
 
     // second screen
-    std::map<std::string, std::vector<std::string>> secondScreenContent;
-    std::vector<std::string> secondScreenMapping;
+    std::map<std::string, std::pair<std::string[MAX_ITEMS], int>> secondScreenContent;
+    std::string secondScreenMapping[MAX_ITEMS];
+    int MAPPING_COUNT;
 };
 
 inline bool loadConfig(Config &config, const std::string &filename = "config.json")
@@ -66,18 +69,32 @@ inline bool loadConfig(Config &config, const std::string &filename = "config.jso
         config.FONT_SIZE = root["FONT_SIZE"].asInt();
         config.BACKGROUND_IMAGE = root["BACKGROUND_IMAGE"].asString();
 
+        config.IMAGE_FILE_COUNT = 0;
         for (const auto &f : root["IMAGE_FILES"])
-            config.IMAGE_FILES.push_back(f.asString());
+        {
+            if (config.IMAGE_FILE_COUNT >= MAX_ITEMS)
+                break;
+            config.IMAGE_FILES[config.IMAGE_FILE_COUNT++] = f.asString();
+        }
 
+        config.MAPPING_COUNT = 0;
         for (const auto &f : root["SECOND_SCREEN_MAPPING"])
-            config.secondScreenMapping.push_back(f.asString());
+        {
+            if (config.MAPPING_COUNT >= MAX_ITEMS)
+                break;
+            config.secondScreenMapping[config.MAPPING_COUNT++] = f.asString();
+        }
 
         for (const auto &key : root["SECOND_SCREEN_CONTENT"].getMemberNames())
         {
+            int idx = 0;
             for (const auto &val : root["SECOND_SCREEN_CONTENT"][key])
             {
-                config.secondScreenContent[key].push_back(val.asString());
+                if (idx >= MAX_ITEMS)
+                    break;
+                config.secondScreenContent[key].first[idx++] = val.asString();
             }
+            config.secondScreenContent[key].second = idx; // count
         }
     }
     catch (const std::exception &e)
