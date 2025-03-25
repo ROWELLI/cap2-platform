@@ -1,7 +1,7 @@
 {
     "SCREEN_WIDTH": 1400,
     "SCREEN_HEIGHT": 400,
-    "RECT_COUNT": 8,
+    "RECT_COUNT": 5,
     "RECT_WIDTH": 120,
     "RECT_HEIGHT": 120,
     "RECT_GAP": 20,
@@ -12,14 +12,33 @@
     "FONT_PATH": "assets/font/arial.ttf",
     "FONT_SIZE": 100,
     "IMAGE_FILES": [
-        "assets/image/photo.jpg",
-        "assets/image/game.png",
-        "assets/image/ai.png",
-        "image/image4.png",
-        "image/image5.jpg",
-        "image/image6.png",
-        "image/image7.jpg",
-        "image/image8.png"
+        "assets/image/image.png",
+        "assets/image/game2.png",
+        "assets/image/heart.png",
+        "assets/image/good.png",
+        "assets/image/camera.png"
     ],
-    "BACKGROUND_IMAGE": "assets/image/photo.jpg"
+    "BACKGROUND_IMAGE": "assets/image/background3.png",
+    "SECOND_SCREEN_CONTENT": {
+        "game": [
+            "game1",
+            "game2"
+        ],
+        "tool": [
+            "camera",
+            "paint"
+        ],
+        "social": [
+            "heart",
+            "chat",
+            "message"
+        ]
+    },
+    "SECOND_SCREEN_MAPPING": [
+        "tool",
+        "game",
+        "social",
+        "social",
+        "tool"
+    ]
 }

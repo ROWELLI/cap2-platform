@@ -1,12 +1,13 @@
+// config_loader.h + cpp 통합 파일
 #ifndef CONFIG_LOADER_H
 #define CONFIG_LOADER_H
 
-#include <iostream>
+#include <string>
+#include <vector>
+#include <map>
 #include <fstream>
 #include <jsoncpp/json/json.h>
-#include <vector>
-
-using namespace std;
+#include <iostream>
 
 struct Config
 {
@@ -20,28 +21,32 @@ struct Config
     float SELECTED_SCALE;
     float ANIMATION_SPEED;
     float SCALE_SPEED;
-    string FONT_PATH;
+    std::string FONT_PATH;
     int FONT_SIZE;
-    vector<string> IMAGE_FILES;
-    string BACKGROUND_IMAGE;
+    std::vector<std::string> IMAGE_FILES;
+    std::string BACKGROUND_IMAGE;
+
+    // second screen
+    std::map<std::string, std::vector<std::string>> secondScreenContent;
+    std::vector<std::string> secondScreenMapping;
 };
 
-bool loadConfig(Config &config, const string &filename = "config.json")
+inline bool loadConfig(Config &config, const std::string &filename = "config.json")
 {
-    ifstream file(filename, ifstream::binary);
+    std::ifstream file(filename);
     if (!file.is_open())
     {
-        cerr << "설정 파일을 열 수 없습니다: " << filename << endl;
+        std::cerr << "설정 파일을 열 수 없습니다: " << filename << std::endl;
         return false;
     }
 
     Json::Value root;
     Json::CharReaderBuilder builder;
-    string errors;
+    std::string errors;
 
     if (!Json::parseFromStream(builder, file, &root, &errors))
     {
-        cerr << "JSON 파싱 오류: " << errors << endl;
+        std::cerr << "JSON 파싱 오류: " << errors << std::endl;
         return false;
     }
 
@@ -59,17 +64,25 @@ bool loadConfig(Config &config, const string &filename = "config.json")
         config.SCALE_SPEED = root["SCALE_SPEED"].asFloat();
         config.FONT_PATH = root["FONT_PATH"].asString();
         config.FONT_SIZE = root["FONT_SIZE"].asInt();
-
-        for (const auto &file : root["IMAGE_FILES"])
-        {
-            config.IMAGE_FILES.push_back(file.asString());
-        }
-
         config.BACKGROUND_IMAGE = root["BACKGROUND_IMAGE"].asString();
+
+        for (const auto &f : root["IMAGE_FILES"])
+            config.IMAGE_FILES.push_back(f.asString());
+
+        for (const auto &f : root["SECOND_SCREEN_MAPPING"])
+            config.secondScreenMapping.push_back(f.asString());
+
+        for (const auto &key : root["SECOND_SCREEN_CONTENT"].getMemberNames())
+        {
+            for (const auto &val : root["SECOND_SCREEN_CONTENT"][key])
+            {
+                config.secondScreenContent[key].push_back(val.asString());
+            }
+        }
     }
-    catch (exception &e)
+    catch (const std::exception &e)
     {
-        cerr << "설정값 변환 오류: " << e.what() << endl;
+        std::cerr << "설정값 변환 오류: " << e.what() << std::endl;
         return false;
     }
 
