@@ -3,8 +3,9 @@
 
 #include <SDL2/SDL.h>
 #include <string>
+#include <map>
 #include "config_loader.h"
 
 void drawSecondScreen(SDL_Renderer *renderer, const std::string *items, int itemCount, const Config &config);
 
-#endif
+#endif // SECOND_SCREEN_H

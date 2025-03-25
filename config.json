@@ -20,19 +20,19 @@
     ],
     "BACKGROUND_IMAGE": "assets/image/background3.png",
     "SECOND_SCREEN_CONTENT": {
-        "game": [
-            "game1",
-            "game2"
-        ],
-        "tool": [
-            "camera",
-            "paint"
-        ],
-        "social": [
-            "heart",
-            "chat",
-            "message"
-        ]
+        "game": {
+            "game1": "assets/image/game1.png",
+            "game2": "assets/image/game2.png"
+        },
+        "tool": {
+            "camera": "assets/image/camera.png",
+            "paint": "assets/image/paint.png"
+        },
+        "social": {
+            "heart": "assets/image/heart.png",
+            "chat": "assets/image/chat.png",
+            "message": "assets/image/message.png"
+        }
     },
     "SECOND_SCREEN_MAPPING": [
         "tool",

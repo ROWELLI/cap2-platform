@@ -109,10 +109,15 @@ int main(int argc, char *argv[])
 
         if (!inMainView)
         {
-            string category = config.secondScreenMapping[selected];
-            const string *items = config.secondScreenContent[category].first;
-            int itemCount = config.secondScreenContent[category].second;
-            drawSecondScreen(renderer, items, itemCount, config);
+            std::string category = config.secondScreenMapping[selected];
+            const auto &itemMap = config.secondScreenImageMap[category];
+            std::string itemKeys[MAX_ITEMS];
+            int itemCount = 0;
+            for (const auto &[key, _] : itemMap)
+            {
+                itemKeys[itemCount++] = key;
+            }
+            drawSecondScreen(renderer, itemKeys, itemCount, config);
             SDL_Delay(16);
             continue;
         }

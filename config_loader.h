@@ -1,12 +1,11 @@
-// config_loader.h + cpp 통합 파일 (vector 제거 버전)
 #ifndef CONFIG_LOADER_H
 #define CONFIG_LOADER_H
 
 #include <string>
-#include <map>
 #include <fstream>
 #include <jsoncpp/json/json.h>
 #include <iostream>
+#include <map>
 
 #define MAX_ITEMS 50
 
@@ -27,11 +26,9 @@ struct Config
     std::string IMAGE_FILES[MAX_ITEMS];
     int IMAGE_FILE_COUNT;
     std::string BACKGROUND_IMAGE;
-
-    // second screen
-    std::map<std::string, std::pair<std::string[MAX_ITEMS], int>> secondScreenContent;
     std::string secondScreenMapping[MAX_ITEMS];
     int MAPPING_COUNT;
+    std::map<std::string, std::map<std::string, std::string>> secondScreenImageMap;
 };
 
 inline bool loadConfig(Config &config, const std::string &filename = "config.json")
@@ -85,16 +82,13 @@ inline bool loadConfig(Config &config, const std::string &filename = "config.jso
             config.secondScreenMapping[config.MAPPING_COUNT++] = f.asString();
         }
 
-        for (const auto &key : root["SECOND_SCREEN_CONTENT"].getMemberNames())
+        for (const auto &cat : root["SECOND_SCREEN_CONTENT"].getMemberNames())
         {
-            int idx = 0;
-            for (const auto &val : root["SECOND_SCREEN_CONTENT"][key])
+            const Json::Value &items = root["SECOND_SCREEN_CONTENT"][cat];
+            for (const auto &key : items.getMemberNames())
             {
-                if (idx >= MAX_ITEMS)
-                    break;
-                config.secondScreenContent[key].first[idx++] = val.asString();
+                config.secondScreenImageMap[cat][key] = items[key].asString();
             }
-            config.secondScreenContent[key].second = idx; // count
         }
     }
     catch (const std::exception &e)
