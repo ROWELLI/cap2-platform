@@ -2,7 +2,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
 #include <iostream>
-#include "pixel_capture.h"
+#include "pixel_capture/pixel_capture.h"
 #include "config_loader.h"
 #include "second_screen.h"
 
