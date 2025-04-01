@@ -10,26 +10,29 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
+    // Load configuration from JSON file
     Config config;
     if (!loadConfig(config))
     {
-        cerr << "설정 파일을 불러오지 못했습니다." << endl;
+        cerr << "Failed to load configuration file." << endl;
         return 1;
     }
 
+    // Initialize SDL, TTF and SDL_image
     if (SDL_Init(SDL_INIT_VIDEO) != 0 || TTF_Init() != 0)
     {
-        cerr << "초기화 실패: " << SDL_GetError() << endl;
+        cerr << "Initialization failed: " << SDL_GetError() << endl;
         return 1;
     }
 
     if (!(IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG) & (IMG_INIT_JPG | IMG_INIT_PNG)))
     {
-        cerr << "SDL_image 초기화 실패: " << IMG_GetError() << endl;
+        cerr << "Failed to initialize SDL_image: " << IMG_GetError() << endl;
         SDL_Quit();
         return 1;
     }
 
+    // Create SDL window and renderer
     SDL_Window *window = SDL_CreateWindow("SDL2 UI",
                                           SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                           config.SCREEN_WIDTH, config.SCREEN_HEIGHT,
@@ -38,17 +41,19 @@ int main(int argc, char *argv[])
 
     if (!window || !renderer)
     {
-        cerr << "윈도우 또는 렌더러 생성 실패" << endl;
+        cerr << "Failed to create window or renderer" << endl;
         return 1;
     }
 
+    // Load font from path
     TTF_Font *font = TTF_OpenFont(config.FONT_PATH.c_str(), config.FONT_SIZE);
     if (!font)
     {
-        cerr << "폰트 로드 실패: " << TTF_GetError() << endl;
+        cerr << "Failed to load font: " << TTF_GetError() << endl;
         return 1;
     }
 
+    // Load background image
     SDL_Texture *backgroundTexture = nullptr;
     SDL_Surface *bgSurface = IMG_Load(config.BACKGROUND_IMAGE.c_str());
     if (bgSurface)
@@ -57,6 +62,7 @@ int main(int argc, char *argv[])
         SDL_FreeSurface(bgSurface);
     }
 
+    // Load all selectable images as textures
     SDL_Texture *imageTextures[MAX_ITEMS] = {nullptr};
     for (int i = 0; i < config.IMAGE_FILE_COUNT; ++i)
     {
@@ -68,6 +74,7 @@ int main(int argc, char *argv[])
         }
     }
 
+    // Allocate memory for screen pixel capture
     allocatePixelMemory(config.SCREEN_WIDTH, config.SCREEN_HEIGHT);
 
     int selected = 0;
@@ -79,6 +86,7 @@ int main(int argc, char *argv[])
     bool running = true;
     bool inMainView = true;
 
+    // Main event loop
     while (running)
     {
         SDL_Event event;
@@ -107,17 +115,19 @@ int main(int argc, char *argv[])
             }
         }
 
+        // Enter second screen view
         if (!inMainView)
         {
             std::string category = config.secondScreenMapping[selected];
             secondScreenLoop(renderer, config, category);
-            inMainView = true; // 두 번째 화면이 종료되면 첫 화면으로 복귀
+            inMainView = true; // Return to main view after second screen ends
             continue;
 
             SDL_Delay(16);
             continue;
         }
 
+        // Update animation values (offset and scale)
         currentOffset += (selected - currentOffset) * config.ANIMATION_SPEED;
         for (int i = 0; i < config.IMAGE_FILE_COUNT; ++i)
         {
@@ -127,19 +137,23 @@ int main(int argc, char *argv[])
                 currentScale[i] += (1.0f - currentScale[i]) * config.SCALE_SPEED;
         }
 
+        // Clear screen
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderClear(renderer);
 
+        // Render background if available
         if (backgroundTexture)
         {
             SDL_Rect bgRect = {0, 0, config.SCREEN_WIDTH, config.SCREEN_HEIGHT};
             SDL_RenderCopy(renderer, backgroundTexture, NULL, &bgRect);
         }
 
+        // Calculate starting position for image row
         int centerX = config.SCREEN_WIDTH / 2 - (config.RECT_WIDTH * config.SELECTED_SCALE) / 2;
         int startY = config.SCREEN_HEIGHT - config.RECT_HEIGHT - config.BOTTOM_MARGIN;
         int startX = centerX - currentOffset * (config.RECT_WIDTH + config.RECT_GAP);
 
+        // Render image thumbnails (with scaling and animation)
         for (int i = 0; i < config.IMAGE_FILE_COUNT; ++i)
         {
             int rectWidth = config.RECT_WIDTH * currentScale[i];
@@ -149,6 +163,7 @@ int main(int argc, char *argv[])
 
             if (!imageTextures[i])
             {
+                // Render colored rect as fallback
                 SDL_SetRenderDrawColor(renderer, i == selected ? 255 : 0, 0, i == selected ? 0 : 255, 255);
                 SDL_RenderFillRect(renderer, &rect);
             }
@@ -159,11 +174,15 @@ int main(int argc, char *argv[])
             startX += rectWidth + config.RECT_GAP;
         }
 
+        // Capture screen pixels and process via E1.31
         capturePixels(renderer, config.SCREEN_WIDTH, config.SCREEN_HEIGHT);
+
+        // Present the rendered frame
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        SDL_Delay(16); // ~60 FPS
     }
 
+    // Clean up textures
     for (int i = 0; i < config.IMAGE_FILE_COUNT; ++i)
         if (imageTextures[i])
             SDL_DestroyTexture(imageTextures[i]);
@@ -171,6 +190,7 @@ int main(int argc, char *argv[])
     if (backgroundTexture)
         SDL_DestroyTexture(backgroundTexture);
 
+    // Free memory and shutdown SDL subsystems
     freePixelMemory();
     TTF_CloseFont(font);
     SDL_DestroyRenderer(renderer);

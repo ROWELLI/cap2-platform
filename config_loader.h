@@ -9,49 +9,65 @@
 
 #define MAX_ITEMS 50
 
+// Key definitions for input handling
+#define KEY_LEFT SDLK_LEFT
+#define KEY_RIGHT SDLK_RIGHT
+#define KEY_SELECT SDLK_RETURN
+#define KEY_BACK SDLK_ESCAPE
+
+using namespace std;
+
+// Structure to store configuration settings
 struct Config
 {
-    int SCREEN_WIDTH;
-    int SCREEN_HEIGHT;
-    int RECT_COUNT;
-    int RECT_WIDTH;
-    int RECT_HEIGHT;
-    int RECT_GAP;
-    int BOTTOM_MARGIN;
-    float SELECTED_SCALE;
-    float ANIMATION_SPEED;
-    float SCALE_SPEED;
-    std::string FONT_PATH;
-    int FONT_SIZE;
-    std::string IMAGE_FILES[MAX_ITEMS];
-    int IMAGE_FILE_COUNT;
-    std::string BACKGROUND_IMAGE;
-    std::map<std::string, std::map<std::string, std::pair<std::string, std::string>>> secondScreenContent;
-    std::string secondScreenMapping[MAX_ITEMS];
+    int SCREEN_WIDTH;              // Width of the screen
+    int SCREEN_HEIGHT;             // Height of the screen
+    int RECT_COUNT;                // Number of selectable rectangles
+    int RECT_WIDTH;                // Width of each rectangle
+    int RECT_HEIGHT;               // Height of each rectangle
+    int RECT_GAP;                  // Gap between rectangles
+    int BOTTOM_MARGIN;             // Margin at the bottom
+    float SELECTED_SCALE;          // Scale factor when rectangle is selected
+    float ANIMATION_SPEED;         // Speed of the animation
+    float SCALE_SPEED;             // Speed of the scaling animation
+    string FONT_PATH;              // Path to the font file
+    int FONT_SIZE;                 // Font size
+    string IMAGE_FILES[MAX_ITEMS]; // List of image file paths
+    int IMAGE_FILE_COUNT;          // Number of image files
+    string BACKGROUND_IMAGE;       // Background image path
+
+    // Second screen content structure: category -> item -> (image, command)
+    map<string, map<string, pair<string, string>>> secondScreenContent;
+
+    // Mapping between main screen items and second screen content
+    string secondScreenMapping[MAX_ITEMS];
     int MAPPING_COUNT;
 };
 
-inline bool loadConfig(Config &config, const std::string &filename = "config.json")
+// Function to load configuration from a JSON file
+inline bool loadConfig(Config &config, const string &filename = "config.json")
 {
-    std::ifstream file(filename);
+    ifstream file(filename);
     if (!file.is_open())
     {
-        std::cerr << "설정 파일을 열 수 없습니다: " << filename << std::endl;
+        cerr << "Failed to open config file: " << filename << endl;
         return false;
     }
 
     Json::Value root;
     Json::CharReaderBuilder builder;
-    std::string errors;
+    string errors;
 
+    // Parse JSON content
     if (!Json::parseFromStream(builder, file, &root, &errors))
     {
-        std::cerr << "JSON 파싱 오류: " << errors << std::endl;
+        cerr << "Failed to parse JSON: " << errors << endl;
         return false;
     }
 
     try
     {
+        // Load basic configuration values
         config.SCREEN_WIDTH = root["SCREEN_WIDTH"].asInt();
         config.SCREEN_HEIGHT = root["SCREEN_HEIGHT"].asInt();
         config.RECT_COUNT = root["RECT_COUNT"].asInt();
@@ -66,6 +82,7 @@ inline bool loadConfig(Config &config, const std::string &filename = "config.jso
         config.FONT_SIZE = root["FONT_SIZE"].asInt();
         config.BACKGROUND_IMAGE = root["BACKGROUND_IMAGE"].asString();
 
+        // Load image file list
         config.IMAGE_FILE_COUNT = 0;
         for (const auto &f : root["IMAGE_FILES"])
         {
@@ -74,6 +91,7 @@ inline bool loadConfig(Config &config, const std::string &filename = "config.jso
             config.IMAGE_FILES[config.IMAGE_FILE_COUNT++] = f.asString();
         }
 
+        // Load second screen mapping
         config.MAPPING_COUNT = 0;
         for (const auto &f : root["SECOND_SCREEN_MAPPING"])
         {
@@ -82,20 +100,21 @@ inline bool loadConfig(Config &config, const std::string &filename = "config.jso
             config.secondScreenMapping[config.MAPPING_COUNT++] = f.asString();
         }
 
+        // Load second screen content
         for (const auto &category : root["SECOND_SCREEN_CONTENT"].getMemberNames())
         {
             const Json::Value &items = root["SECOND_SCREEN_CONTENT"][category];
             for (const auto &itemName : items.getMemberNames())
             {
-                std::string imagePath = items[itemName]["CONTENT_IMAGE"].asString();
-                std::string command = items[itemName].get("COMMAND", "").asString();
-                config.secondScreenContent[category][itemName] = std::make_pair(imagePath, command);
+                string imagePath = items[itemName]["CONTENT_IMAGE"].asString();
+                string command = items[itemName].get("COMMAND", "").asString();
+                config.secondScreenContent[category][itemName] = make_pair(imagePath, command);
             }
         }
     }
-    catch (const std::exception &e)
+    catch (const exception &e)
     {
-        std::cerr << "설정값 변환 오류: " << e.what() << std::endl;
+        cerr << "Error parsing config values: " << e.what() << endl;
         return false;
     }
 
