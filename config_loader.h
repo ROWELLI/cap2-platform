@@ -26,7 +26,7 @@ struct Config
     std::string IMAGE_FILES[MAX_ITEMS];
     int IMAGE_FILE_COUNT;
     std::string BACKGROUND_IMAGE;
-    std::map<std::string, std::map<std::string, std::string>> secondScreenContent;
+    std::map<std::string, std::map<std::string, std::pair<std::string, std::string>>> secondScreenContent;
     std::string secondScreenMapping[MAX_ITEMS];
     int MAPPING_COUNT;
 };
@@ -87,12 +87,9 @@ inline bool loadConfig(Config &config, const std::string &filename = "config.jso
             const Json::Value &items = root["SECOND_SCREEN_CONTENT"][category];
             for (const auto &itemName : items.getMemberNames())
             {
-                std::string raw = items[itemName].asString();
-                std::string prefix = "CONTENT_IMAGE: ";
-                if (raw.find(prefix) == 0)
-                {
-                    config.secondScreenContent[category][itemName] = raw.substr(prefix.length());
-                }
+                std::string imagePath = items[itemName]["CONTENT_IMAGE"].asString();
+                std::string command = items[itemName].get("COMMAND", "").asString();
+                config.secondScreenContent[category][itemName] = std::make_pair(imagePath, command);
             }
         }
     }

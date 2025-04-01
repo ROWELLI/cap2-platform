@@ -21,17 +21,38 @@
     "BACKGROUND_IMAGE": "assets/image/background3.png",
     "SECOND_SCREEN_CONTENT": {
         "game": {
-            "game1": "CONTENT_IMAGE: assets/image/game1.png",
-            "game2": "CONTENT_IMAGE: assets/image/game2.png"
+            "game1": {
+                "CONTENT_IMAGE": "assets/image/game1.png",
+                "COMMAND": "./game"
+            },
+            "game2": {
+                "CONTENT_IMAGE": "assets/image/game2.png",
+                "COMMAND": ""
+            }
         },
         "tool": {
-            "camera": "CONTENT_IMAGE: assets/image/camera.png",
-            "paint": "CONTENT_IMAGE: assets/image/paint.png"
+            "camera": {
+                "CONTENT_IMAGE": "assets/image/camera.png",
+                "COMMAND": ""
+            },
+            "paint": {
+                "CONTENT_IMAGE": "assets/image/paint.png",
+                "COMMAND": ""
+            }
         },
         "social": {
-            "heart": "CONTENT_IMAGE: assets/image/heart.png",
-            "chat": "CONTENT_IMAGE: assets/image/chat.png",
-            "message": "CONTENT_IMAGE: assets/image/message.png"
+            "heart": {
+                "CONTENT_IMAGE": "assets/image/heart.png",
+                "COMMAND": ""
+            },
+            "chat": {
+                "CONTENT_IMAGE": "assets/image/chat.png",
+                "COMMAND": ""
+            },
+            "message": {
+                "CONTENT_IMAGE": "assets/image/message.png",
+                "COMMAND": ""
+            }
         }
     },
     "SECOND_SCREEN_MAPPING": [

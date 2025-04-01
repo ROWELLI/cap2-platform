@@ -1,20 +1,35 @@
+#ifndef SECOND_SCREEN_H
+#define SECOND_SCREEN_H
+
+#include <SDL2/SDL.h>
+#include <string>
+#include "config_loader.h"
+
+void secondScreenLoop(SDL_Renderer *renderer, const Config &config, const std::string &category);
+
+#endif
+
+// second_screen.cpp
 #include "second_screen.h"
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <cstdlib>
 
 void secondScreenLoop(SDL_Renderer *renderer, const Config &config, const std::string &category)
 {
     const auto &itemMap = config.secondScreenContent.at(category);
     std::vector<std::string> itemNames;
     std::vector<std::string> imagePaths;
+    std::vector<std::string> commands;
 
     for (const auto &entry : itemMap)
     {
         itemNames.push_back(entry.first);
-        imagePaths.push_back(entry.second);
+        imagePaths.push_back(entry.second.first);
+        commands.push_back(entry.second.second);
     }
 
     int itemCount = itemNames.size();
@@ -55,6 +70,13 @@ void secondScreenLoop(SDL_Renderer *renderer, const Config &config, const std::s
                 else if (event.key.keysym.sym == SDLK_RIGHT)
                 {
                     selected = (selected + 1) % itemCount;
+                }
+                else if (event.key.keysym.sym == SDLK_RETURN)
+                {
+                    if (!commands[selected].empty())
+                    {
+                        system(commands[selected].c_str());
+                    }
                 }
             }
         }
