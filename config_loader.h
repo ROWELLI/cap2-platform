@@ -2,10 +2,10 @@
 #define CONFIG_LOADER_H
 
 #include <string>
+#include <map>
 #include <fstream>
 #include <jsoncpp/json/json.h>
 #include <iostream>
-#include <map>
 
 #define MAX_ITEMS 50
 
@@ -26,9 +26,9 @@ struct Config
     std::string IMAGE_FILES[MAX_ITEMS];
     int IMAGE_FILE_COUNT;
     std::string BACKGROUND_IMAGE;
+    std::map<std::string, std::map<std::string, std::string>> secondScreenContent;
     std::string secondScreenMapping[MAX_ITEMS];
     int MAPPING_COUNT;
-    std::map<std::string, std::map<std::string, std::string>> secondScreenImageMap;
 };
 
 inline bool loadConfig(Config &config, const std::string &filename = "config.json")
@@ -82,12 +82,17 @@ inline bool loadConfig(Config &config, const std::string &filename = "config.jso
             config.secondScreenMapping[config.MAPPING_COUNT++] = f.asString();
         }
 
-        for (const auto &cat : root["SECOND_SCREEN_CONTENT"].getMemberNames())
+        for (const auto &category : root["SECOND_SCREEN_CONTENT"].getMemberNames())
         {
-            const Json::Value &items = root["SECOND_SCREEN_CONTENT"][cat];
-            for (const auto &key : items.getMemberNames())
+            const Json::Value &items = root["SECOND_SCREEN_CONTENT"][category];
+            for (const auto &itemName : items.getMemberNames())
             {
-                config.secondScreenImageMap[cat][key] = items[key].asString();
+                std::string raw = items[itemName].asString();
+                std::string prefix = "CONTENT_IMAGE: ";
+                if (raw.find(prefix) == 0)
+                {
+                    config.secondScreenContent[category][itemName] = raw.substr(prefix.length());
+                }
             }
         }
     }

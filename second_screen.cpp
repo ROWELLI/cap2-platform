@@ -2,77 +2,117 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
 #include <iostream>
-#include "pixel_capture.h"
-using namespace std;
+#include <vector>
+#include <cmath>
 
-void drawSecondScreen(SDL_Renderer *renderer, const std::string *items, int itemCount, const Config &config)
+void secondScreenLoop(SDL_Renderer *renderer, const Config &config, const std::string &category)
 {
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    SDL_RenderClear(renderer);
+    const auto &itemMap = config.secondScreenContent.at(category);
+    std::vector<std::string> itemNames;
+    std::vector<std::string> imagePaths;
 
-    SDL_Texture *textures[MAX_ITEMS] = {nullptr};
-    for (int i = 0; i < itemCount; ++i)
+    for (const auto &entry : itemMap)
     {
-        std::string imagePath;
-        for (const auto &categoryPair : config.secondScreenImageMap)
+        itemNames.push_back(entry.first);
+        imagePaths.push_back(entry.second);
+    }
+
+    int itemCount = itemNames.size();
+    int selected = 0;
+    float currentOffset = 0;
+    float currentScale[MAX_ITEMS];
+    for (int i = 0; i < itemCount; ++i)
+        currentScale[i] = 1.0f;
+
+    SDL_Texture *backgroundTexture = nullptr;
+    SDL_Surface *bgSurface = IMG_Load(config.BACKGROUND_IMAGE.c_str());
+    if (bgSurface)
+    {
+        backgroundTexture = SDL_CreateTextureFromSurface(renderer, bgSurface);
+        SDL_FreeSurface(bgSurface);
+    }
+
+    bool inSecondScreen = true;
+    while (inSecondScreen)
+    {
+        SDL_Event event;
+        while (SDL_PollEvent(&event))
         {
-            const auto &itemMap = categoryPair.second;
-            auto it = itemMap.find(items[i]);
-            if (it != itemMap.end())
+            if (event.type == SDL_QUIT)
             {
-                imagePath = it->second;
-                break;
+                inSecondScreen = false;
+            }
+            else if (event.type == SDL_KEYDOWN)
+            {
+                if (event.key.keysym.sym == SDLK_ESCAPE)
+                {
+                    inSecondScreen = false;
+                }
+                else if (event.key.keysym.sym == SDLK_LEFT)
+                {
+                    selected = (selected - 1 + itemCount) % itemCount;
+                }
+                else if (event.key.keysym.sym == SDLK_RIGHT)
+                {
+                    selected = (selected + 1) % itemCount;
+                }
             }
         }
-        if (imagePath.empty())
-            continue;
 
-        SDL_Surface *surface = IMG_Load(imagePath.c_str());
-        if (surface)
+        currentOffset += (selected - currentOffset) * config.ANIMATION_SPEED;
+        for (int i = 0; i < itemCount; ++i)
         {
-            textures[i] = SDL_CreateTextureFromSurface(renderer, surface);
-            SDL_FreeSurface(surface);
+            if (i == selected)
+                currentScale[i] += (config.SELECTED_SCALE - currentScale[i]) * config.SCALE_SPEED;
+            else
+                currentScale[i] += (1.0f - currentScale[i]) * config.SCALE_SPEED;
         }
-        else
+
+        SDL_SetRenderDrawColor(renderer, 240, 240, 240, 255);
+        SDL_RenderClear(renderer);
+
+        if (backgroundTexture)
         {
-            std::cerr << "이미지 로드 실패: " << imagePath << " - " << IMG_GetError() << std::endl;
+            SDL_Rect bgRect = {0, 0, config.SCREEN_WIDTH, config.SCREEN_HEIGHT};
+            SDL_RenderCopy(renderer, backgroundTexture, NULL, &bgRect);
         }
-    }
 
-    float scale[MAX_ITEMS];
-    for (int i = 0; i < itemCount; ++i)
-        scale[i] = 1.0f;
+        int centerX = config.SCREEN_WIDTH / 2 - (config.RECT_WIDTH * config.SELECTED_SCALE) / 2;
+        int startY = config.SCREEN_HEIGHT - config.RECT_HEIGHT - config.BOTTOM_MARGIN;
+        int startX = centerX - currentOffset * (config.RECT_WIDTH + config.RECT_GAP);
 
-    int centerX = config.SCREEN_WIDTH / 2 - (config.RECT_WIDTH * config.SELECTED_SCALE) / 2;
-    int startY = config.SCREEN_HEIGHT - config.RECT_HEIGHT - config.BOTTOM_MARGIN;
-    int totalWidth = itemCount * config.RECT_WIDTH + (itemCount - 1) * config.RECT_GAP;
-    int startX = (config.SCREEN_WIDTH - totalWidth) / 2;
-
-    for (int i = 0; i < itemCount; ++i)
-    {
-        int rectWidth = config.RECT_WIDTH * scale[i];
-        int rectHeight = config.RECT_HEIGHT * scale[i];
-        int offsetY = (rectHeight - config.RECT_HEIGHT) / 2;
-
-        SDL_Rect rect = {startX, startY - offsetY, rectWidth, rectHeight};
-
-        if (!textures[i])
+        for (int i = 0; i < itemCount; ++i)
         {
-            SDL_SetRenderDrawColor(renderer, 100, 100, 255, 255);
+            int rectWidth = config.RECT_WIDTH * currentScale[i];
+            int rectHeight = config.RECT_HEIGHT * currentScale[i];
+            int offsetY = (rectHeight - config.RECT_HEIGHT) / 2;
+            SDL_Rect rect = {startX, startY - offsetY, rectWidth, rectHeight};
+
+            SDL_Surface *imgSurface = IMG_Load(imagePaths[i].c_str());
+            SDL_Texture *imgTexture = nullptr;
+            if (imgSurface)
+            {
+                imgTexture = SDL_CreateTextureFromSurface(renderer, imgSurface);
+                SDL_FreeSurface(imgSurface);
+            }
+
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(renderer, 200, 200, 200, 180); // 반투명 회색
             SDL_RenderFillRect(renderer, &rect);
-        }
-        else
-        {
-            SDL_RenderCopy(renderer, textures[i], NULL, &rect);
+
+            if (imgTexture)
+            {
+                SDL_RenderCopy(renderer, imgTexture, NULL, &rect);
+                SDL_DestroyTexture(imgTexture);
+            }
+
+            startX += rectWidth + config.RECT_GAP;
         }
 
-        startX += rectWidth + config.RECT_GAP;
+        SDL_RenderPresent(renderer);
+        SDL_Delay(16);
     }
 
-    for (int i = 0; i < itemCount; ++i)
-        if (textures[i])
-            SDL_DestroyTexture(textures[i]);
-
-    capturePixels(renderer, config.SCREEN_WIDTH, config.SCREEN_HEIGHT);
-    SDL_RenderPresent(renderer);
+    if (backgroundTexture)
+        SDL_DestroyTexture(backgroundTexture);
 }
