@@ -12,13 +12,13 @@
     "FONT_PATH": "assets/font/arial.ttf",
     "FONT_SIZE": 100,
     "IMAGE_FILES": [
-        "assets/image/image.png",
-        "assets/image/game2.png",
-        "assets/image/heart.png",
-        "assets/image/good.png",
-        "assets/image/camera.png"
+        "assets/image/w_image.png",
+        "assets/image/w_game.png",
+        "assets/image/w_video.png",
+        "assets/image/w_ai.png",
+        "assets/image/w_camera.png"
     ],
-    "BACKGROUND_IMAGE": "assets/image/background3.png",
+    "BACKGROUND_IMAGE": "assets/image/blue.png",
     "SECOND_SCREEN_CONTENT": {
         "game": {
             "game1": {
