@@ -42,10 +42,6 @@ public:
     {
         return processed_image;
     }
-    int get_processed_image_size()
-    {
-        return processed_image_size;
-    }
     unsigned char *image;
     ~ImageProcessor()
     {

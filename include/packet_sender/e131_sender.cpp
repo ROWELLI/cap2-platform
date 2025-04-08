@@ -18,7 +18,7 @@ int E131Sender::send(uint8_t *pixels, uint16_t length)
         memcpy(&(packet.dmp.prop_val[1]), pixels, 512);
         if (e131_send(sockfd, &packet, &dest) < 0)
             return 1;
-        // e131_pkt_dump(stderr, &packet);
+        //        e131_pkt_dump(stderr, &packet);
         pixels += 512;
     }
     if (!last_universe)
@@ -28,7 +28,7 @@ int E131Sender::send(uint8_t *pixels, uint16_t length)
     memcpy(&(packet.dmp.prop_val[1]), pixels, last_universe);
     if (e131_send(sockfd, &packet, &dest) < 0)
         return 1;
-    // e131_pkt_dump(stderr, &packet);
+    //   e131_pkt_dump(stderr, &packet);
     return 0;
 }
 

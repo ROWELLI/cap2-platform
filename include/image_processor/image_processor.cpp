@@ -1,4 +1,3 @@
-#include <cstdio>
 #include <cstring>
 #include <iostream>
 
@@ -77,7 +76,7 @@ int ImageProcessor::calc_row()
     partial_buf = new unsigned char[partial_buf_size];
     for (int i = 0; i < calc_row_size; i++)
     {
-        // cout << calc_rows[i] << ',';
+        cout << calc_rows[i] << ',';
     }
     cout << endl;
     return 0;

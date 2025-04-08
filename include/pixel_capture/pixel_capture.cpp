@@ -1,3 +1,4 @@
+// pixel_capture.cpp
 #include "pixel_capture.h"
 #include "image_processor/image_processor.h"
 #include "packet_sender/e131_sender.h"
@@ -7,105 +8,106 @@
 
 using namespace std;
 
-// Global pixel buffer pointer
 unsigned char *pixels = nullptr;
+ImageProcessor *imgProcessor = nullptr;
+E131Sender *sender = nullptr;
 
-// Allocate memory for pixel buffer (RGB format)
+int ROWS[54] = {
+    104, 126, 141, 157, 172, 187, 199, 211, 224, 235, 246, 255, 263, 272, 279,
+    286, 293, 299, 306, 311, 316, 320, 326, 331, 335, 337, 342, 345, 347, 351,
+    353, 355, 357, 356, 358, 359, 359, 359, 359, 358, 358, 356, 355, 353, 351,
+    348, 345, 342, 338, 334, 330, 325, 319, 314};
+const int NUM_ROWS = 54;
+const char *TARGET_IP = "192.168.50.72";
+
+// 서피스를 재사용하기 위한 정적 변수
+static SDL_Surface *captureSurface = nullptr;
+static int frameCounter = 0;
+
 void allocatePixelMemory(int screen_width, int screen_height)
 {
-    if (pixels)
-        delete[] pixels;
     pixels = new unsigned char[screen_width * screen_height * 3];
+
+    // 전역 객체 초기화 (한 번만 생성)
+    if (!imgProcessor)
+    {
+        imgProcessor = new ImageProcessor(screen_height, screen_width, 0, 0, 359, 0, ROWS, NUM_ROWS);
+    }
+    if (!sender)
+    {
+        sender = new E131Sender(TARGET_IP);
+    }
 }
 
-// Free previously allocated pixel memory
 void freePixelMemory()
 {
     delete[] pixels;
     pixels = nullptr;
+
+    delete imgProcessor;
+    imgProcessor = nullptr;
+
+    delete sender;
+    sender = nullptr;
+
+    if (captureSurface)
+    {
+        SDL_FreeSurface(captureSurface);
+        captureSurface = nullptr;
+    }
 }
 
-// Capture screen pixels and process them
-void capturePixels(SDL_Renderer *rR, int screen_width, int screen_height)
+void capturePixels(SDL_Renderer *renderer, int screen_width, int screen_height)
 {
-    if (!pixels)
+    // 프레임 제한: 2프레임에 1번만 처리
+    frameCounter++;
+    if (frameCounter % 2 != 0)
+        return;
+
+    if (!pixels || !imgProcessor || !sender)
     {
-        cerr << "Pixel memory is not allocated!" << endl;
+        cerr << "필수 메모리 또는 객체가 초기화되지 않았습니다!" << endl;
         return;
     }
 
-    // Static instances to persist across multiple calls
-    static ImageProcessor *image = nullptr;
-    static E131Sender *sender = nullptr;
+    int width, height;
+    SDL_GetRendererOutputSize(renderer, &width, &height);
 
-    // Initialize ImageProcessor only once
-    if (!image)
+    if (!captureSurface)
     {
-        try
+        captureSurface = SDL_CreateRGBSurfaceWithFormat(0, width, height, 24, SDL_PIXELFORMAT_RGB24);
+        if (!captureSurface)
         {
-            int rows[54] = {/* ... (omitted for brevity) ... */};
-            image = new ImageProcessor(screen_height, screen_width, 0, 0, 359, 0, rows, 54);
-        }
-        catch (exception &e)
-        {
-            cerr << "Failed to create ImageProcessor: " << e.what() << endl;
+            cerr << "서피스 생성 실패: " << SDL_GetError() << endl;
             return;
         }
     }
 
-    // Initialize E1.31 sender only once
-    if (!sender)
+    if (SDL_RenderReadPixels(renderer, NULL, SDL_PIXELFORMAT_RGB24, captureSurface->pixels, captureSurface->pitch) != 0)
     {
-        try
-        {
-            const char *ip = "192.168.50.72";
-            sender = new E131Sender(ip);
-        }
-        catch (exception &e)
-        {
-            cerr << "Failed to create sender: " << e.what() << endl;
-            return;
-        }
-    }
-
-    // Create a surface to capture pixels in RGB24 format
-    SDL_Surface *surface = SDL_CreateRGBSurfaceWithFormat(0, screen_width, screen_height, 24, SDL_PIXELFORMAT_RGB24);
-    if (!surface || !surface->pixels)
-    {
-        cerr << "Failed to create surface: " << SDL_GetError() << endl;
+        cerr << "픽셀 읽기 실패: " << SDL_GetError() << endl;
         return;
     }
 
-    // Read pixels from the renderer into the surface
-    if (SDL_RenderReadPixels(rR, NULL, SDL_PIXELFORMAT_RGB24, surface->pixels, surface->pitch) != 0)
+    unsigned char *surfacePixels = static_cast<unsigned char *>(captureSurface->pixels);
+    for (int y = 0; y < height; y++)
     {
-        cerr << "Failed to read pixels: " << SDL_GetError() << endl;
-        SDL_FreeSurface(surface);
-        return;
-    }
-
-    // Convert pixel format from surface to internal buffer (convert RGB -> BGR)
-    unsigned char *surfacePixels = static_cast<unsigned char *>(surface->pixels);
-    for (int y = 0; y < screen_height; y++)
-    {
-        for (int x = 0; x < screen_width; x++)
+        for (int x = 0; x < width; x++)
         {
-            int src_idx = y * surface->pitch + x * 3;
-            int dst_idx = (y * screen_width + x) * 3;
-            pixels[dst_idx] = surfacePixels[src_idx + 2];     // Red
-            pixels[dst_idx + 1] = surfacePixels[src_idx + 1]; // Green
-            pixels[dst_idx + 2] = surfacePixels[src_idx];     // Blue
+            int pixel_index = (y * captureSurface->pitch) + (x * 3);
+            unsigned char r = surfacePixels[pixel_index];
+            unsigned char g = surfacePixels[pixel_index + 1];
+            unsigned char b = surfacePixels[pixel_index + 2];
+
+            int index = (y * width + x) * 3;
+            pixels[index] = b;
+            pixels[index + 1] = g;
+            pixels[index + 2] = r;
         }
     }
 
-    // Apply image masking and rotation
-    image->mask(pixels);
-    image->rotate();
-
-    // Send processed image using E1.31 protocol
-    sender->send(image->get_processed_image(), 48771);
+    imgProcessor->mask(pixels);
+    imgProcessor->rotate();
+    sender->send(imgProcessor->get_processed_image(), 48771);
     sender->next();
-
-    // Free the temporary surface
-    SDL_FreeSurface(surface);
 }
