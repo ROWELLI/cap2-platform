@@ -11,7 +11,6 @@
 #include "../packet_sender/e131_sender.h"
 #include "../image_processor/image_processor.h"
 
-
 using namespace std;
 
 #define DEFAULT_PATH "/opt/sphere/sphere_spec.json"

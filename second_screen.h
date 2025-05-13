@@ -9,6 +9,7 @@
 #include <cmath>
 #include <cstdlib>
 #include "config_loader.h"
+#include "pixel_capture/pixel_capture.h"
 
 using namespace std;
 
@@ -130,6 +131,8 @@ void secondScreenLoop(SDL_Renderer *renderer, const Config &config, const std::s
 
             startX += rectWidth + config.RECT_GAP;
         }
+
+        capturePixels(renderer, config.SCREEN_WIDTH, config.SCREEN_HEIGHT);
 
         SDL_RenderPresent(renderer);
         SDL_Delay(16);

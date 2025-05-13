@@ -18,7 +18,7 @@
         "assets/image/w_ai.png",
         "assets/image/w_camera.png"
     ],
-    "BACKGROUND_IMAGE": "assets/image/blue.png",
+    "BACKGROUND_IMAGE": "assets/image/navy.png",
     "SECOND_SCREEN_CONTENT": {
         "game": {
             "game1": {
